@@ -4,6 +4,16 @@ from app.crawler import buscar_noticia_google
 import requests
 import os
 
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+HF_API_TOKEN = os.getenv("HUGGINGFACE_API_KEY")
+SERP_API_KEY = os.getenv("SERPAPI_API_KEY")
+
+
 app = FastAPI()
 
 # Página principal con botón
