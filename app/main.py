@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from app.crawler import buscar_noticia_google
 
 app = FastAPI()
@@ -7,22 +7,37 @@ app = FastAPI()
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     return """
-    <h1 style='text-align: center;'>Hola Mundo</h1>
-    <p style='text-align: center;'>Ve a <code>/noticia</code> para buscar una noticia</p>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Hola Mundo</title>
+    </head>
+    <body>
+        <h1 style='text-align: center;'>Hola Mundo</h1>
+        <div style='text-align: center;'>
+            <button onclick="buscarNoticia()">Buscar Noticia</button>
+        </div>
+
+        <script>
+        async function buscarNoticia() {
+            try {
+                const response = await fetch('/noticia');
+                const data = await response.json();
+                if (data.url) {
+                    window.open(data.url, '_blank');
+                } else {
+                    alert("No se encontró la noticia");
+                }
+            } catch (error) {
+                alert("Error al buscar la noticia");
+            }
+        }
+        </script>
+    </body>
+    </html>
     """
-@app.get("/noticia", response_class=HTMLResponse)
-def get_noticia_html():
+
+@app.get("/noticia")
+def get_noticia():
     resultado = buscar_noticia_google("guerra Israel e Irán")
-    
-    if "error" in resultado:
-        return f"<h2>Error: {resultado['error']}</h2>"
-
-    titulo = resultado["titulo"]
-    url = resultado["url"]
-    
-    return f"""
-    <h1>Resultado de la búsqueda</h1>
-    <p><strong>Título:</strong> {titulo}</p>
-    <p><a href="{url}" target="_blank">Ver noticia</a></p>
-    """
-
+    return JSONResponse(content=resultado)
