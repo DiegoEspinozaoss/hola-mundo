@@ -42,24 +42,30 @@ def resumen_noticia():
 
     titulo = resultado["titulo"]
 
-    # Enviar a GPT-2 usando Hugging Face Inference API
-    HF_API_TOKEN = os.getenv("HUGGINGFACE_API_KEY")  # Debes configurarlo en Render
-    API_URL = "https://api-inference.huggingface.co/models/gpt2"
+    HF_API_TOKEN = os.getenv("HUGGINGFACE_API_KEY")
+    if not HF_API_TOKEN:
+        return JSONResponse(content={"error": "Token de Hugging Face no está definido"})
 
+    API_URL = "https://api-inference.huggingface.co/models/gpt2"
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    payload = {
-        "inputs": f"Resume brevemente: {titulo}"
-    }
+    payload = {"inputs": f"Resume brevemente esta noticia: {titulo}"}
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
+        response.raise_for_status()  # lanza error si status >= 400
         gpt_output = response.json()
 
-        texto_generado = gpt_output[0]["generated_text"]
-        return {
-            "titulo": titulo,
-            "resumen": texto_generado
-        }
+        if isinstance(gpt_output, list) and "generated_text" in gpt_output[0]:
+            return {
+                "titulo": titulo,
+                "resumen": gpt_output[0]["generated_text"]
+            }
+        else:
+            return {"error": "Respuesta inesperada del modelo", "raw_response": gpt_output}
 
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
